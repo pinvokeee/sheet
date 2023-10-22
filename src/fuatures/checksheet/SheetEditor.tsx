@@ -22,38 +22,28 @@ const Item = styled("div")(({ theme }) => ({
     flexDirection: "row",
 }));
 
-const Label = styled("div")(({ theme }) => ({
-    minWidth: "100px",
+const Title = styled("p")(({ theme }) => ({
+    minWidth: "200px",
     padding: "4px",
 }));
 
-// const SelectorsBase = <T,>(props: { label: string, items: T[], onChange: (newSelector: string[]) => void, controls: React.ReactNode }) => {
-
-//     const { label, controls } = props;
-
-//     const handleChange = (index: number, value: string) => {
-//         props.onChange([...props.items.map((v, i) => i == index ? value : v)]);
-//     }
-
-//     const handleClick = () => {
-//         props.onChange([...props.items, ""]);
-//     }
-
-//     return <>
-//         <Flex>
-//             { props.items.map((item, index) => <Item>
-//                 <Label>{label}{index+1}</Label>
-//                 { controls }
-//                 </Item>) }
-//             <Item><Button onClick={handleClick}>選択肢を追加</Button></Item>
-//         </Flex>
-//     </>
-// }
+const Label = (props: { children?: React.ReactNode }) => {
+    return <div><Title>{ props.children }</Title></div>
+}
 
 const Selectors = (props: { items: string[], onChange: (newSelector: string[]) => void }) => {
 
+    const [ itemNames, setItemNames ] = useState(props.items);
+
+    // const handleBlur = (index: number, value: string) => {
+    const handleBlur = () => {
+        props.onChange([...itemNames]);
+    }
+
+    // const handleChange = () => {
     const handleChange = (index: number, value: string) => {
-        props.onChange([...props.items.map((v, i) => i == index ? value : v)]);
+        setItemNames([...props.items.map((v, i) => i == index ? value : v)]);        
+        // props.onChange([...props.items.map((v, i) => i == index ? value : v)]);
     }
 
     const handleClick = () => {
@@ -64,16 +54,17 @@ const Selectors = (props: { items: string[], onChange: (newSelector: string[]) =
         <Flex>
             { props.items.map((item, index) => <Item key={index}>
                 <Label>選択肢{index+1}</Label>
-                <TextField key={index} value={item} onChange={(e) => handleChange(index, e.target.value)} />
+                <TextField key={index} value={itemNames[index] ?? ""} onChange={(e) => handleChange(index, e.target.value)} onBlur={handleBlur} />
+                {/* <TextField key={index} value={item} onBlur={handleBlur} onChange={(e) => handleChange(index, e.target.value)} /> */}
                 </Item>) }
             <Item><Button onClick={handleClick}>選択肢を追加</Button></Item>
         </Flex>
     </>
 }
 
-const ParentItemSelector = (props: { listItems: SheetItem[], selectKeys: string[] | undefined, onChange: (newSelector: string[]) => void }) => {
+const ParentItemSelector = React.memo((props: { parentItem: SheetItem, listItems: SheetItem[], selectKeys: string[] | undefined, onChange: (newSelector: string[]) => void }) => {
 
-    const { listItems, selectKeys } = props;
+    const { parentItem, listItems, selectKeys } = props;
 
     const handleChange = (index: number, value: string) => {
         if (props.selectKeys == undefined) return props.onChange([value]);
@@ -88,112 +79,163 @@ const ParentItemSelector = (props: { listItems: SheetItem[], selectKeys: string[
     return <>
         <Flex>
             { selectKeys ? selectKeys.map((item, index) => <Item key={index}>
-                <Label>親項目{index+1}</Label>
+                <Label>依存項目{index+1}</Label>
                 <Select value={item} onChange={(e) => handleChange(index, e.target.value as string)} >
-                    { listItems.map(item => <MenuItem key={item.key} value={item.key}>{item.name}</MenuItem>) }
+                    { listItems.map((item, nindex) => item.key != parentItem.key && <MenuItem key={item.key} value={item.key}>{nindex+1}.{item.name}</MenuItem>) }
                 </Select>
                 {/* <TextField key={index} value={item} onChange={(e) => handleChange(index, e.target.value)} /> */}
                 </Item>) : <></> }
-            <Item><Button onClick={handleClick}>親項目を追加</Button></Item>
+            <Item><Button onClick={handleClick}>依存項目を追加</Button></Item>
         </Flex>
     </>
-}
+})
+
+const SheetItemElementContainer = (props: { children: React.ReactNode }) => {
+
+    return (
+        <Card sx={{padding: "16px"}}>
+            <Flex>
+                {props.children}
+            </Flex>
+        </Card>
+    )
+};
 
 type ISheetItemElementProps = {
-    item: SheetItem, 
-    // changeSheetItem: (targetItem: SheetItem, changeFunc: (item: SheetItem) => SheetItem, isRefresh?: boolean) => SheetItem,
-    // refreshSheet: () => void,
-    // items: SheetItem[],
-    // changeSheetItem: (targetItem: SheetItem, name: keyof SheetItem, newValue: never) => SheetItem | undefined,
+    index: number,
+    item: SheetItem,
+    changeSheetItem: (targetItem: SheetItem, changeFunc: (item: SheetItem) => SheetItem, isRefresh?: boolean) => SheetItem,
 }
 
 const SheetItemElement = React.memo((props: ISheetItemElementProps) => {
 
-    // const { items, refreshSheet } = props;
-    const [item, setItem] = useState(props.item);
-
-    console.log("TEST");
+    const { index, item, changeSheetItem } = props;
+    const [ itemName, setItemName ] = useState(props.item.name ?? "");
+    const [ itemRegexText, setItemRegexText ] = useState(item.validateRegex ?? "");
+    const [ itemValidateErrorMessage, setItemValidateErrorMessage ] = useState(item.validateErrorMessage ?? "");
 
     const handleChange = (event: any) => {
-        setItem({ ...item, name: event.target.value });
-        // setItem(props.changeSheetItem(item, (target) => ({ ...target, name: event.target.value }), true));
+        setItemName(event.target.value);
     }
 
     const handleNameBlur = (event: any) => {
-        // setItem(props.changeSheetItem(item, (target) => ({ ...target, name: event.target.value }), true));
+        changeSheetItem(item, (target) => ({ ...target, name: itemName }));
     }
 
     const handleChangeSelection = (event: SelectChangeEvent<SheetItemType>) => {
-        // setItem(props.changeSheetItem(item, (target) => ({ ...target, type: event.target.value as SheetItemType })));
+        changeSheetItem(item, (target) => ({ ...target, type: event.target.value as SheetItemType }));
     }
 
     const handleChangeIsRequired = (event: any) => {
-        // setItem(props.changeSheetItem(item, (target) => ({ ...target, isRequired: event.target.checked })));
+        changeSheetItem(item, (target) => ({ ...target, isRequired: event.target.checked }));
     }
 
     const handleChangeSelector = (selector: string[]) => {
-        // setItem(props.changeSheetItem(item, (target) => ({ ...target, selector})));
+        changeSheetItem(item, (target) => ({ ...target, selector }));
     }
 
-    const handleChangeParentSelector = (parentKeys: string[]) => {
-        console.log(parentKeys);
-        // setItem(props.changeSheetItem(item, (target) => ({ ...target, parentKeys})));
+    const handleChangeValidate = (event: any) => {
+        changeSheetItem(item, (target) => ({ ...target, isValidate: event.target.checked }));
+    }
+
+    const handleRegexChange = (event: any) => {
+        setItemRegexText(event.target.value);
+    }
+
+    const handleRegexBlur = (event: any) => {
+        changeSheetItem(item, (target) => ({ ...target, validateRegex: itemRegexText }));
+    }
+
+    const handleValidateErrorMessageChange = (event: any) => {
+        setItemValidateErrorMessage(event.target.value);
+    }
+
+    const handleValidateErrorMesssageBlur = (event: any) => {
+        changeSheetItem(item, (target) => ({ ...target, validateErrorMessage: itemValidateErrorMessage }));
     }
 
     return <>
-        <Card sx={{padding: "16px"}}>
-            <Flex>
-                <Item> 
-                    <FormControlLabel sx={{userSelect: "none"}} label="必須項目" control={<Checkbox checked={item.isRequired} onChange={handleChangeIsRequired}/>}/>
-                </Item>
 
-                <Item> 
-                    <Label>項目</Label>
-                    <TextField name="name" value={item.name} onChange={handleChange} onBlur={handleNameBlur}/>
-                </Item>
+        <h2>{index+1}. {itemName}</h2>
 
-                <Item> 
-                    <Label>タイプ</Label>
-                    <Select value={item.type} onChange={handleChangeSelection}>
-                        <MenuItem value="text">テキスト</MenuItem>
-                        <MenuItem value="checkbox">単一チェック</MenuItem>
-                        <MenuItem value="checklist">チェックリスト</MenuItem>
-                        <MenuItem value="radio">ラジオボタン</MenuItem>
-                    </Select>
-                </Item>
+        <Item> 
+            <FormControlLabel sx={{userSelect: "none"}} label="必須項目" control={<Checkbox checked={item.isRequired} onChange={handleChangeIsRequired}/>}/>
+        </Item>
 
-                { (item.type == "radio" || item.type == "checklist") && <Selectors items={item.selector} onChange={handleChangeSelector} /> }
+        <Item> 
+            <Label>項目</Label>
+            <TextField value={itemName} onChange={handleChange} onBlur={handleNameBlur}/>
+        </Item>
 
-                <Item> 
-                    {/* <ParentItemSelector listItems={items} selectKeys={item.parentKeys} onChange={handleChangeParentSelector} /> */}
-                </Item>
+        <Item> 
+            <Label>タイプ</Label>
+            <Select value={item.type} onChange={handleChangeSelection}>
+                <MenuItem value="text">テキスト</MenuItem>
+                <MenuItem value="checkbox">単一チェック</MenuItem>
+                <MenuItem value="checklist">チェックリスト</MenuItem>
+                <MenuItem value="radio">ラジオボタン</MenuItem>
+            </Select>
+        </Item>
 
-            </Flex>
-        </Card>
+        { item.type == "text" && 
+            <Item>
+                <Label></Label>
+                <FormControlLabel label="入力内容を正規表現で検証する" control={<Checkbox checked={item.isValidate ?? false} onChange={handleChangeValidate} />} />
+            </Item>
+        }
+        
+        { item.type == "text" && item.isValidate && <>        
+            <Item>
+                <Label>正規表現</Label>
+                <TextField value={itemRegexText} onChange={handleRegexChange} onBlur={handleRegexBlur}></TextField>
+            </Item>
+            <Item>
+                <Label>不一致時のエラー文</Label>
+                <TextField value={itemValidateErrorMessage} onChange={handleValidateErrorMessageChange} onBlur={handleValidateErrorMesssageBlur}></TextField>
+            </Item>
+            </>
+        }
+
+        { (item.type == "radio" || item.type == "checklist") && <Selectors items={item.selector} onChange={handleChangeSelector} /> }
+
     </>
-});
+} );
 
 type ISheetEditorProps = {
     currentSheet: Sheet, 
     addSheetItem: (newItem: SheetItem) => void, 
-    refreshSheet: () => void,
-    changeSheetItem: (targetItem: SheetItem, changeFunc: (item: SheetItem) => SheetItem, isRefresh?: boolean) => SheetItem,
+    changeSheetItem: (targetItem: SheetItem, changeFunc: (item: SheetItem) => SheetItem) => SheetItem,
 }
 
 export const SheetEditor = (props: ISheetEditorProps) => {
 
+    const { changeSheetItem } = props;
     const { items } = props.currentSheet;
 
     const handleClick = () => {
         props.addSheetItem( { key: crypto.randomUUID(), name: `新規項目${items.length}`, isRequired: true, type: "text", selector: [] } );
     }
 
-    console.log("TESTA");
+    // console.log("RENDER_EDITOR");
+
+    const prop = { 
+        changeSheetItem 
+    }
+
+    const handleChangeParentSelector = (item: SheetItem, parentKeys: string[]) => {
+        changeSheetItem(item, (target) => ({ ...target, parentKeys}));
+    }
 
     return <>
         <Container>
             <Stack gap={2}>
-                { items.map(item => <SheetItemElement key={item.key} item={item}  {...props} />) }
+                { items.map((item, index) => (
+                    <SheetItemElementContainer key={item.key}>
+                        <SheetItemElement key={item.key} index={index} item={item} {...prop} />
+                        <ParentItemSelector parentItem={item} listItems={items} selectKeys={item.parentKeys} onChange={(parkeys) => handleChangeParentSelector(item, parkeys)} />
+                    </SheetItemElementContainer>
+                    )) 
+                }
                 <Button onClick={handleClick}>追加</Button>
             </Stack>
         </Container>

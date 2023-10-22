@@ -1,12 +1,16 @@
 import { Box, Checkbox, FormControlLabel, Radio, RadioGroup, TextField, styled } from "@mui/material";
 import { Sheet, SheetItem, SheetItemValue } from "../../types/types"
 import { useState } from "react";
+import React from "react";
 
-const Label = styled("div")(({theme}) => ({
-
+const Label = styled("p")(({theme}) => ({
+    height: "42px",
+    lineHeight: "42px",
+    padding: "0",
+    margin: "0",
 }));
 
-const IsRequiredLabel = styled("div")(({theme}) => ({
+const IsRequiredLabel = styled("p")(({theme}) => ({
     marginLeft: "auto",
     color: "gray",
     fontSize: "80%",
@@ -14,10 +18,12 @@ const IsRequiredLabel = styled("div")(({theme}) => ({
 
 const TitleBox = styled("div")(({theme}) => ({
     display: "flex",
-    // width: "100%",
     borderLeft: "solid 4px #8ed1fc",
+    borderBottom: "none",
+    padding: "0",
+    margin: "0",
+    height: "42px",
     paddingLeft: "8px",
-    margin: "8px 0px 8px 0px",
 }));
 
 const Title = (props: { item: SheetItem, children?: React.ReactNode }) => {
@@ -121,7 +127,9 @@ const SheetItemTextField = (props: { item: SheetItem, valueItem: SheetItemValue,
     </>
 }
 
-const SheetItemElement = (props: { item: SheetItem,  valueItem: SheetItemValue, onChange: (item: SheetItem, newValueItem: SheetItemValue) => void }) => {
+const SheetItemElement = React.memo((props: { item: SheetItem,  valueItem: SheetItemValue, onChange: (item: SheetItem, newValueItem: SheetItemValue) => void }) => {
+
+console.log("REDNER");
 
     const { item, valueItem } = props;
 
@@ -143,13 +151,13 @@ const SheetItemElement = (props: { item: SheetItem,  valueItem: SheetItemValue, 
             </Box>
         </Box>
     </>
-}
+});
 
 type ISheetViewProps = {
     currentSheet: Sheet,
 
     getValue: (targetItem: SheetItem) => SheetItemValue,
-    setValue: (targetItem: SheetItem, changeFunc: (value: SheetItemValue) => SheetItemValue) => SheetItemValue,
+    setValue: (targetItem: SheetItem, changeFunc: (value: SheetItemValue) => SheetItemValue) => void,
 }
 
 export const SheetView = (props: ISheetViewProps) => {
@@ -161,8 +169,9 @@ export const SheetView = (props: ISheetViewProps) => {
         setValue(item, () => newValueItem);
     }
 
+
     return <>
     
-        { items.map(item => <SheetItemElement key={item.key} item={item} valueItem={getValue(item)} onChange={handleChange} {...props} />) }
+        { items.map(item => <SheetItemElement key={item.key} item={item} valueItem={getValue(item)} onChange={handleChange}/>) }
     </>
 }

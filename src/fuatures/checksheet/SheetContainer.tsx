@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Sheet } from "../../types/types";
 import { useCurrentSheet } from "./useCurrentCheckSheet";
 import { SheetView } from "./SheetView";
+import { useCheckSheet } from "./useCheckSheet";
 
 const Container = styled("div")(({ theme }) => ({
 
@@ -49,8 +50,16 @@ export const SheetContainer = (props: { isEditMode: boolean }) => {
         ]
     }
 
+    // const { sheets, getValue, setValue } = useCheckSheet();
+    const { getValue, setValue } = useCheckSheet();
     const hook = useCurrentSheet({ sheet: newSheet });
     const { target } = hook;
+
+    const view_prop = {
+        getValue,
+        setValue,
+        ...hook,
+    }
 
     useEffect(() => {
         // setSheet(newSheet);
@@ -72,7 +81,7 @@ export const SheetContainer = (props: { isEditMode: boolean }) => {
         <Container>
             <Button onClick={handleClick}>AAA</Button>
             { isEditMode && target && <SheetEditor currentSheet={target} { ...hook }></SheetEditor> }
-            { !isEditMode && target && <SheetView currentSheet={target} { ...hook }></SheetView> }
+            { !isEditMode && target && <SheetView currentSheet={target} { ...view_prop }></SheetView> }
         </Container>
     </>
         
