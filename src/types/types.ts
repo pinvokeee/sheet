@@ -6,13 +6,16 @@ export type Sheet = {
 export type SheetItem = {
     key: string, 
     name: string,
-    type: "text" | "checkbox" | "radio",
+    type: SheetItemType,
     selector: string[],
     isRequired: boolean,
+    parentKeys?: string[],
 }
 
 export type SheetItemValue = {
-    value: string,
-    latestInputDateTime: Date,
+    value?: string,
+    values?: string[],
+    latestInputDateTime: Date | undefined,
 }
 
+export type SheetItemType = "text" | "checkbox" | "radio" | "checklist";

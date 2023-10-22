@@ -1,10 +1,22 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Sheet, SheetItemValue } from "../../types/types"
 
 export const useCheckSheet = () => {
 
-    const [sheets, setSheets] = useState<Sheet[]>([]);
+    const [sheets, setSheets] = useState<Sheet[]>([]);    
+    const [currentSheet, setCurrentSheet] = useState<Sheet>();
+    
     const [sheetItemValues, setSheetItemValues] = useState<[string, SheetItemValue][]>([]);
+
+
+    const registerSheet = useCallback((newSheet: Sheet) => {
+        setSheets(sheets => [...sheets, newSheet]);
+    }, []);
+
+    const selectSheetFromIndex = useCallback((index: number) => {
+        setCurrentSheet(sheets[index]);
+    }, [sheets]);
+
 
     useEffect(() => 
     {
@@ -55,6 +67,8 @@ export const useCheckSheet = () => {
     return {
         sheets, 
 
+        registerSheet,
+        selectSheetFromIndex,
     }
 
 }
